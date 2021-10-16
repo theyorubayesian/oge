@@ -6,4 +6,9 @@ See [Aesthetics of Recreational Dances as Exemplified in the Oge Dance](https://
 
 ## Data
 
-This project uses the [AfriFashion1600](https://ieeexplore.ieee.org/abstract/document/9522852) Dataset developed by researchers at [Data Science Nigeria](https://www.datasciencenigeria.org/). It contains 1600 samples labelled in 8 classes of African fashion styles. 
+This project uses the [AfriFashion1600](https://ieeexplore.ieee.org/abstract/document/9522852) Dataset developed by researchers at [Data Science Nigeria](https://www.datasciencenigeria.org/). It contains 1600 samples labelled in 8 classes of African fashion styles. The dataset is available for download [here]().
+
+To create the dataset for this project, unzip the dataset into the data folder then use the `dataset.py`
+```
+% python dataset.py
+```
