@@ -44,7 +44,7 @@ def create_dataset(dataset_path: str, train_size: float, seeds: list) -> None:
     images = sorted([f for f in files(dataset_path)])
     assert len(images) == N_IMAGES
 
-    for split, seed in zip(splits, seeds):
+    for split in splits:
         dir_name = os.path.join(dataset_path, split)
         os.makedirs(dir_name, exist_ok=True)
 
