@@ -70,4 +70,13 @@ def create_dataset(dataset_path: str, train_size: float, seeds: list) -> None:
 
 
 if __name__ == "__main__":
-    create_dataset("data/AFRIFASHION1600", 0.7, [23, 54, 67, 98])
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dataset_path", default="data/AFRIFASHION1600")
+    parser.add_argument("--train_size", type=float, default=0.7)
+    parser.add_argument("--seed", type=float, default=23)
+    args = parser.parse_args()
+
+    random.seed(args.seed)
+    seeds = random.choices(list(range(100)))
+    create_dataset(args.dataset_path, args.train_size, seeds)
