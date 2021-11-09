@@ -14,30 +14,36 @@ from torch.optim import SGD
 from torch.utils.data import DataLoader
 from torchvision import datasets
 import torchvision.models as models
-import torchvision.transforms as transforms
+from torchvision import transforms
 
 
 # TODO: Import dependencies for Debugging andd Profiling
 
 MODEL_CHECKPOINT_NAME = "oge_resnet50.pt"
 
-def transform_data():
-    return {
-        "train": transforms.Compose([
-            #TODO: Check all these transforms
-            transforms.RandomResizedCrop(224), 
-            transforms.RandomHorizontalFlip(o=0.5),
-            transforms.Resize(224),
-            transforms.ToTensor(),
-            transforms.Normalize(means=[], std=[])  # TODO:
-        ]),
-        "val": transforms.Compose([
-            transforms.Resize(256),
-            transforms.CenterCrop(224),
-            transforms.ToTensor(),
-            transforms.Normalize(means=[], std=[])
+
+def transform_data(image_size: int = None, training: bool = True):
+    if training:
+        return {
+            "train": transforms.Compose([
+                #TODO: Check all these transforms
+                transforms.RandomResizedCrop(224), 
+                transforms.RandomHorizontalFlip(o=0.5),
+                transforms.Resize(224),
+                transforms.ToTensor(),
+                transforms.Normalize(means=[], std=[])  # TODO:
+            ]),
+            "val": transforms.Compose([
+                transforms.Resize(256),
+                transforms.CenterCrop(224),
+                transforms.ToTensor(),
+                transforms.Normalize(means=[], std=[])
+            ])
+        }
+    else:
+        return transforms.Compose([
+            transforms.Resize(image_size)
         ])
-    }
 
 
 def create_data_loaders(
@@ -74,6 +80,28 @@ def create_data_loaders(
     class_names = fashion_dataset["train"].classes
 
     return dataloaders, dataset_sizes, class_names
+
+
+def get_normalization_stats(dataloader: DataLoader, image_size: int):
+    """
+    Computing Mean & STD in Image Dataset - Nikita Kozodoi
+    https://kozodoi.me/python/deep%20learning/pytorch/tutorial/2021/03/08/image-mean-std.html
+    """
+    psum = torch.tensor([0.0, 0.0, 0.0])
+    psum_sq = torch.tensor([0.0, 0.0, 0.0])
+
+    for i, inputs in enumerate(dataloader):
+        # inputs dimension is batch_size x 3 x image_size x image_size
+        psum += inputs.sum(axis=[0, 2, 3])
+        psum_sq += (inputs ** 2).sum(axis=[0, 2, 3])
+
+    pixel_count = (image_size ** 2) * (i + 1)
+
+    mean = psum / pixel_count
+    var = (psum_sq / pixel_count) - (mean ** 2)
+    std = torch.sqrt(var)
+
+    return mean, std
 
 
 def net(num_output_classes: int = 8):
