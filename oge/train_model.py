@@ -14,43 +14,28 @@ from torch.optim import SGD
 from torch.utils.data import DataLoader
 from torchvision import datasets
 import torchvision.models as models
-from torchvision import transforms
+from torchvision import transforms as T
 
 
 # TODO: Import dependencies for Debugging andd Profiling
 
 MODEL_CHECKPOINT_NAME = "oge_resnet50.pt"
+SPLITS = ["train", "val"]
 
-
-def transform_data(image_size: int = None, training: bool = True):
-    if training:
-        return {
-            "train": transforms.Compose([
-                #TODO: Check all these transforms
-                transforms.RandomResizedCrop(224), 
-                transforms.RandomHorizontalFlip(o=0.5),
-                transforms.Resize(224),
-                transforms.ToTensor(),
-                transforms.Normalize(means=[], std=[])  # TODO:
-            ]),
-            "val": transforms.Compose([
-                transforms.Resize(256),
-                transforms.CenterCrop(224),
-                transforms.ToTensor(),
-                transforms.Normalize(means=[], std=[])
-            ])
-        }
-    else:
-        return transforms.Compose([
-            transforms.Resize(image_size)
-        ])
+def transform_data(mean, std):
+    """"
+    """
+    return T.Compose([
+        T.ToTensor(),
+        T.Normalize(mean=mean, std=std) 
+    ])
 
 
 def create_data_loaders(
     data_dir: str, 
     train_batch_size: int,
     test_batch_size: int,
-    transforms: dict, 
+    transforms: T.Compose, 
     shuffle: bool, 
     num_workers: int
 ) -> Tuple[DataLoader, dict, list]:
@@ -58,14 +43,12 @@ def create_data_loaders(
     This is an optional function that you may or may not need to implement
     depending on whether you need to use data loaders or not
     '''
-    splits = ["train", "val"]
-
     fashion_dataset = {
         x: datasets.ImageFolder(
             os.path.join(data_dir, x),
-            transforms[x]
+            transforms
         )
-        for x in splits
+        for x in SPLITS
     }
     dataloaders = {
         x: DataLoader(
@@ -74,32 +57,23 @@ def create_data_loaders(
             shuffle=shuffle, 
             num_workers=num_workers
         )
-        for x in splits
+        for x in SPLITS
     }
-    dataset_sizes = {x: len(fashion_dataset[x]) for x in splits}
+    dataset_sizes = {x: len(fashion_dataset[x]) for x in SPLITS}
     class_names = fashion_dataset["train"].classes
 
     return dataloaders, dataset_sizes, class_names
 
 
-def get_normalization_stats(dataloader: DataLoader, image_size: int):
+def get_normalization_stats(dataset):
     """
-    Computing Mean & STD in Image Dataset - Nikita Kozodoi
-    https://kozodoi.me/python/deep%20learning/pytorch/tutorial/2021/03/08/image-mean-std.html
+    Why and How to normalize data – Object detection on image in PyTorch Part 1
+    https://inside-machinelearning.com/en/why-and-how-to-normalize-data-object-detection-on-image-in-pytorch-part-1/
     """
-    psum = torch.tensor([0.0, 0.0, 0.0])
-    psum_sq = torch.tensor([0.0, 0.0, 0.0])
-
-    for i, inputs in enumerate(dataloader):
-        # inputs dimension is batch_size x 3 x image_size x image_size
-        psum += inputs.sum(axis=[0, 2, 3])
-        psum_sq += (inputs ** 2).sum(axis=[0, 2, 3])
-
-    pixel_count = (image_size ** 2) * (i + 1)
-
-    mean = psum / pixel_count
-    var = (psum_sq / pixel_count) - (mean ** 2)
-    std = torch.sqrt(var)
+    imgs = torch.stack([img for img, _ in dataset], dim=3)
+    imgs_view = imgs.view(3, -1)
+    mean = imgs_view.mean(dim=1)
+    std = imgs_view.std(dim=1)
 
     return mean, std
 
@@ -199,11 +173,25 @@ def main(args):
         gamma=args.scheduler_gamma
     )
 
-    dataloaders = create_data_loaders(
+    mean = (0, 0, 0)
+    std = (1, 1, 1)
+    if args.normalize:
+        train_dataset = datasets.ImageFolder(
+            os.path.join(args.data_path, "train"),
+            T.Compose([
+                T.ToTensor(),
+                T.Normalize(mean=(0, 0, 0), std=(1, 1, 1))
+            ])
+        )
+        mean, std = get_normalization_stats(train_dataset)
+
+
+    dataloaders, *_ = create_data_loaders(
         args.data_path, 
         args.train_batch_size,
-        args.test_batch_size, 
-        shuffle=args.shuffle, 
+        args.test_batch_size,
+        transforms=transform_data(mean, std),
+        shuffle=args.shuffle,
         num_workers=-1,
     )
     '''
@@ -238,6 +226,7 @@ if __name__=='__main__':
     # ----
     parser.add_argument("--data_path", default="data/AFRIFASHION1600")
     parser.add_argument("--num_classes", default=8, help="Number of classes in dataset")
+    parser.add_argument("--normalize", action="store_true")
 
     # ---------
     # Modelling
