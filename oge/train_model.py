@@ -215,7 +215,7 @@ def main(args):
     '''
     TODO: Save the trained model
     '''
-    model_path = os.path.join(args.output_path, "model", MODEL_CHECKPOINT_NAME)
+    model_path = os.path.join(args.model_dir, MODEL_CHECKPOINT_NAME)
     torch.save(model.state_dict(), model_path)
 
 
@@ -225,9 +225,10 @@ if __name__=='__main__':
     # ----
     # Data
     # ----
-    parser.add_argument("--data_path", default="data/AFRIFASHION1600")
+    parser.add_argument("--train", default=os.environ["SM_CHANNEL_TRAIN"])
+    parser.add_argument("--test", default=os.environ["SM_CHANNEL_TEST"])
     parser.add_argument("--num_classes", default=8, help="Number of classes in dataset")
-    parser.add_argument("--normalize", action="store_true")
+    parser.add_argument("--normalize", type=bool, default=True)
 
     # ---------
     # Modelling
@@ -237,7 +238,8 @@ if __name__=='__main__':
     parser.add_argument("--n_epochs", default=5, help="Number of epochs to train for")
     parser.add_argument("--lr", type=float, default=0.001, help="Learning rate")
     parser.add_argument("--momentum", type=float, default=0.9, help="") # TODO
-    parser.add_argument("--output_path", defaults="ouputs")
+    parser.add_argument("--output_dir", defaults=os.environ["SM_OUTPUT_DATA_DIR"])
+    parser.add_argument("--model_dir", defaults=os.environ["SM_MODEL_DIR"])
     
     # ---
     # GPU
