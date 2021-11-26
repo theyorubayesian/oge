@@ -33,7 +33,6 @@ def transform_data(mean, std):
 
 
 def create_data_loaders(
-    data_dir: str, 
     train_batch_size: int,
     test_batch_size: int,
     transforms: T.Compose, 
@@ -46,7 +45,7 @@ def create_data_loaders(
     '''
     fashion_dataset = {
         x: datasets.ImageFolder(
-            os.path.join(data_dir, x),
+            args.train if x == "train" else args.test,
             transforms
         )
         for x in SPLITS
@@ -178,7 +177,7 @@ def main(args):
     std = (1, 1, 1)
     if args.normalize:
         train_dataset = datasets.ImageFolder(
-            os.path.join(args.data_path, "train"),
+            args.train,
             T.Compose([
                 T.ToTensor(),
                 T.Normalize(mean=(0, 0, 0), std=(1, 1, 1))
@@ -188,7 +187,6 @@ def main(args):
 
 
     dataloaders, *_ = create_data_loaders(
-        args.data_path, 
         args.train_batch_size,
         args.test_batch_size,
         transforms=transform_data(mean, std),
@@ -227,19 +225,22 @@ if __name__=='__main__':
     # ----
     parser.add_argument("--train", default=os.environ["SM_CHANNEL_TRAIN"])
     parser.add_argument("--test", default=os.environ["SM_CHANNEL_TEST"])
-    parser.add_argument("--num_classes", default=8, help="Number of classes in dataset")
+    parser.add_argument("--num_classes", type=int, default=8, help="Number of classes in dataset")
     parser.add_argument("--normalize", type=bool, default=True)
+    parser.add_argument("--shuffle", type=bool, default=True)
 
     # ---------
     # Modelling
     # ---------
-    parser.add_argument("--train_batch_size", default=64, help="input batch size for training (default: 64)")
-    parser.add_argument("--test_batch_size", default=64, help="input batch size for testing")
-    parser.add_argument("--n_epochs", default=5, help="Number of epochs to train for")
+    parser.add_argument("--train_batch_size", type=int, default=64, help="input batch size for training (default: 64)")
+    parser.add_argument("--test_batch_size", type=int, default=64, help="input batch size for testing")
+    parser.add_argument("--n_epochs", type=int, default=5, help="Number of epochs to train for")
     parser.add_argument("--lr", type=float, default=0.001, help="Learning rate")
     parser.add_argument("--momentum", type=float, default=0.9, help="") # TODO
-    parser.add_argument("--output_dir", defaults=os.environ["SM_OUTPUT_DATA_DIR"])
-    parser.add_argument("--model_dir", defaults=os.environ["SM_MODEL_DIR"])
+    parser.add_argument("--scheduler_gamma", type=float, default=0.0)
+    parser.add_argument("-scheduler_step_size", type=int, default=2.0)
+    parser.add_argument("--output_dir", default=os.environ["SM_OUTPUT_DATA_DIR"])
+    parser.add_argument("--model_dir", default=os.environ["SM_MODEL_DIR"])
     
     # ---
     # GPU
