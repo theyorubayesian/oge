@@ -22,6 +22,7 @@ from torchvision import transforms as T
 MODEL_CHECKPOINT_NAME = "oge_resnet50.pt"
 SPLITS = ["train", "val"]
 
+
 def transform_data(mean, std):
     """"
     """
@@ -150,9 +151,9 @@ def train(model, train_loader: DataLoader, criterion, optimizer, scheduler, args
         scheduler.step()    # TODO: Check
         print(
             f"Epoch: {epoch}: Loss {epoch_loss/len(train_loader.dataset)}, "
-            f"Accuracy: {100 * (correct.leb(train_loader.dataset))}%"
+            f"Accuracy: {100 * (correct / len(train_loader.dataset))}%"
         )
-    return 
+    return None
 
 
 def main(args):
@@ -199,7 +200,7 @@ def main(args):
     Remember that you will need to set up a way to get training data from S3
     '''
     model = train(
-        model, 
+        model,
         dataloaders["train"], 
         loss_criterion, 
         optimizer, scheduler, 
