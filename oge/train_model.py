@@ -96,6 +96,8 @@ def test(model, test_loader: DataLoader, criterion):
 
     test_loss = running_loss / len(test_loader.dataset)
     test_acc = 100 * correct / len(test_loader.dataset)
+    
+    # Log test loss and accuracy
     print(
         "\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n".format(
             test_loss, correct, len(test_loader.dataset), test_acc
@@ -126,6 +128,8 @@ def train(model, train_loader: DataLoader, criterion, optimizer, scheduler, args
             prediction = outputs.argmax(dim=1, keepdim=True)
             correct += prediction.eq(target.view_as(prediction)).sum().item()
         # scheduler.step()    # TODO: Check
+        
+        # Log training loss and accuracy 
         print(
             f"Epoch: {epoch}: Loss {epoch_loss/len(train_loader.dataset)}, "
             f"Accuracy: {100 * (correct / len(train_loader.dataset))}%"
@@ -212,4 +216,8 @@ if __name__=='__main__':
     args=parser.parse_args()
     
     args.device = torch.device("cuda:0" if not args.no_cuda and torch.cuda.is_available() else "cpu")
+    
+    # Log all parameters (including hyperparameters)
+    print(args)
+    
     main(args)
