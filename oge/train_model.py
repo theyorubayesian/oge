@@ -85,6 +85,9 @@ def test(model, test_loader: DataLoader, criterion):
 
     with torch.no_grad():
         for inputs, labels in test_loader:
+            inputs = inputs.to(args.device)
+            labels = labels.to(args.device)
+            
             outputs = model(inputs)
             loss = criterion(outputs, labels)
             _, preds = torch.max(outputs, 1)
@@ -102,6 +105,7 @@ def test(model, test_loader: DataLoader, criterion):
 
 
 def train(model, train_loader: DataLoader, criterion, optimizer, scheduler, args: Namespace):
+    model.to(args.device)
     model.train()
 
     for epoch in range(args.n_epochs):
