@@ -4,6 +4,7 @@ from argparse import Namespace
 from typing import Tuple
 
 import numpy as np
+import smdebug.pytorch as smd
 import torch
 import torchvision
 from torch import nn
@@ -82,6 +83,7 @@ def test(model, test_loader: DataLoader, criterion):
     model.eval()
     running_loss = 0
     correct = 0
+    hook.set_mode(smd.modes.EVAL)
 
     with torch.no_grad():
         for inputs, labels in test_loader:
@@ -109,6 +111,7 @@ def test(model, test_loader: DataLoader, criterion):
 def train(model, train_loader: DataLoader, criterion, optimizer, scheduler, args: Namespace):
     model.to(args.device)
     model.train()
+    hook.set_mode(smd.modes.TRAIN)
 
     for epoch in range(args.n_epochs):
         epoch_loss = 0
@@ -167,6 +170,9 @@ def main(args):
         transforms=transform_data(mean, std),
         shuffle=args.shuffle
     )
+    
+    hook = smd.Hook.create_from_json_file()
+    hook.register_hook(model)
 
     train(
         model,
