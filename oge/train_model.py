@@ -173,7 +173,8 @@ def main(args):
     
     hook = smd.Hook.create_from_json_file()
     hook.register_hook(model)
-
+    hook.register_loss(loss_criterion)
+    
     train(
         model,
         dataloaders["train"], 
@@ -222,7 +223,7 @@ if __name__=='__main__':
     
     args=parser.parse_args()
     
-    args.device = torch.device("cuda:0" if not args.no_cuda and torch.cuda.is_available() else "cpu")
+    args.device = torch.device("cuda" if not args.no_cuda and torch.cuda.is_available() else "cpu")
     
     # Log all parameters (including hyperparameters)
     print(args)
