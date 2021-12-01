@@ -79,7 +79,7 @@ def net(num_output_classes: int = 8):
     return model
 
 
-def test(model, test_loader: DataLoader, criterion):
+def test(model, test_loader: DataLoader, criterion, hook):
     model.eval()
     running_loss = 0
     correct = 0
@@ -108,7 +108,7 @@ def test(model, test_loader: DataLoader, criterion):
     return test_loss, test_acc
 
 
-def train(model, train_loader: DataLoader, criterion, optimizer, scheduler, args: Namespace):
+def train(model, train_loader: DataLoader, criterion, optimizer, scheduler, hook, args: Namespace):
     model.to(args.device)
     model.train()
     hook.set_mode(smd.modes.TRAIN)
@@ -179,10 +179,11 @@ def main(args):
         dataloaders["train"], 
         loss_criterion, 
         optimizer, scheduler, 
+        hook,
         args
     )
     
-    test(model, dataloaders["val"], loss_criterion)
+    test(model, dataloaders["val"], loss_criterion, hook)
 
     os.makedirs(args.model_dir, exist_ok=True)
     model_path = os.path.join(args.model_dir, MODEL_CHECKPOINT_NAME)
