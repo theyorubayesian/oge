@@ -4,6 +4,7 @@ from argparse import Namespace
 from typing import Tuple
 
 import numpy as np
+import smdebug.pytorch as smd
 import torch
 import torchvision
 from torch import nn
@@ -78,10 +79,11 @@ def net(num_output_classes: int = 8):
     return model
 
 
-def test(model, test_loader: DataLoader, criterion):
+def test(model, test_loader: DataLoader, criterion, hook):
     model.eval()
     running_loss = 0
     correct = 0
+    hook.set_mode(smd.modes.EVAL)
 
     with torch.no_grad():
         for inputs, labels in test_loader:
@@ -106,9 +108,10 @@ def test(model, test_loader: DataLoader, criterion):
     return test_loss, test_acc
 
 
-def train(model, train_loader: DataLoader, criterion, optimizer, scheduler, args: Namespace):
+def train(model, train_loader: DataLoader, criterion, optimizer, scheduler, hook, args: Namespace):
     model.to(args.device)
     model.train()
+    hook.set_mode(smd.modes.TRAIN)
 
     for epoch in range(args.n_epochs):
         epoch_loss = 0
@@ -167,16 +170,21 @@ def main(args):
         transforms=transform_data(mean, std),
         shuffle=args.shuffle
     )
-
+    
+    hook = smd.Hook.create_from_json_file()
+    hook.register_hook(model)
+    hook.register_loss(loss_criterion)
+    
     train(
         model,
         dataloaders["train"], 
         loss_criterion, 
         optimizer, scheduler, 
+        hook,
         args
     )
     
-    test(model, dataloaders["val"], loss_criterion)
+    test(model, dataloaders["val"], loss_criterion, hook)
 
     os.makedirs(args.model_dir, exist_ok=True)
     model_path = os.path.join(args.model_dir, MODEL_CHECKPOINT_NAME)
@@ -215,7 +223,7 @@ if __name__=='__main__':
     
     args=parser.parse_args()
     
-    args.device = torch.device("cuda:0" if not args.no_cuda and torch.cuda.is_available() else "cpu")
+    args.device = torch.device("cuda" if not args.no_cuda and torch.cuda.is_available() else "cpu")
     
     # Log all parameters (including hyperparameters)
     print(args)
